@@ -39,6 +39,7 @@
 #include <sys/un.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <time.h>
 #include <unistd.h>
 
 // Check if remote JVM has already opened socket for Dynamic Attach
@@ -69,12 +70,13 @@ static int start_attach_mechanism(int pid) {
     kill(pid, SIGQUIT);
     
     int result;
+    struct timespec ts = {0, 100000000};
     int retry = 0;
     do {
-        sleep(1);
+        nanosleep(&ts, NULL);
         result = check_socket(pid);
     } while (!result && ++retry < 10);
-    
+
     unlink(path);
     return result;
 }
@@ -138,8 +140,10 @@ int main(int argc, char** argv) {
     
     printf("Connected to remote JVM\n");
     write_command(fd, argc - 2, argv + 2);
+
     printf("Response code = ");
     read_response(fd);
+
     printf("\n");
     close(fd);
     
