@@ -50,7 +50,7 @@ static int check_socket(int pid) {
     return stat(path, &stats) == 0 && S_ISSOCK(stats.st_mode);
 }
 
-// Force remove JVM to start Attach listener.
+// Force remote JVM to start Attach listener.
 // HotSpot will start Attach listener in response to SIGQUIT if it sees .attach_pid file
 static int start_attach_mechanism(int pid) {
     char path[128];
@@ -114,7 +114,7 @@ static void read_response(int fd) {
     char buf[1024];
     ssize_t bytes;
     while ((bytes = read(fd, buf, sizeof(buf))) > 0) {
-        write(1, buf, bytes);
+        fwrite(buf, 1, bytes, stdout);
     }
 }
 
@@ -136,11 +136,12 @@ int main(int argc, char** argv) {
         return 1;
     }
     
-    printf("Connected to remove JVM\n");
+    printf("Connected to remote JVM\n");
     write_command(fd, argc - 2, argv + 2);
+    printf("Response code = ");
     read_response(fd);
-    close(fd);
     printf("\n");
+    close(fd);
     
     return 0;
 }
