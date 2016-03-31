@@ -14,23 +14,6 @@
  * limitations under the License.
  */
 
-// The utility to send commands to remote JVM via Dynamic Attach mechanism.
-// 
-// This is the lightweight native version of HotSpot Attach API
-// https://docs.oracle.com/javase/8/docs/jdk/api/attach/spec/
-//
-// Supported commands:
-//   - load            : load agent library
-//   - properties      : print system properties
-//   - agentProperties : print agent properties
-//   - datadump        : heap histogram
-//   - threaddump      : dump all stack traces (like jstack)
-//   - dumpheap        : dump heap (like jmap)
-//   - inspectheap     : heap histogram (like jmap -histo)
-//   - setflag         : modify manageable VM flag
-//   - printflag       : print VM flag
-//   - jcmd            : execute jcmd command
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -113,7 +96,7 @@ static void write_command(int fd, int argc, char** argv) {
 
 // Mirror response from remote JVM to stdout
 static void read_response(int fd) {
-    char buf[1024];
+    char buf[8192];
     ssize_t bytes;
     while ((bytes = read(fd, buf, sizeof(buf))) > 0) {
         fwrite(buf, 1, bytes, stdout);

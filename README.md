@@ -14,7 +14,7 @@ Supported commands:
  - **load**            : load agent library
  - **properties**      : print system properties
  - **agentProperties** : print agent properties
- - **datadump**        : heap histogram
+ - **datadump**        : show heap and thread summary
  - **threaddump**      : dump all stack traces (like jstack)
  - **dumpheap**        : dump heap (like jmap)
  - **inspectheap**     : heap histogram (like jmap -histo)
