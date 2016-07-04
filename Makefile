@@ -18,7 +18,7 @@ build/jattach: src/jattach_linux.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 build/jattach.exe: src/jattach_windows.c
-	$(CL) $(CFLAGS) /Fobuild/jattach.obj /Fe$@ $^
+	$(CL) $(CFLAGS) /Fobuild/jattach.obj /Fe$@ $^ advapi32.lib
 
 clean:
 	rm -rf build
