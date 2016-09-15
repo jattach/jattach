@@ -20,10 +20,15 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
+
+static void print_error(const char* msg) {
+    printf("%s (error code = %d)\n", msg, errno);
+}
 
 // Check if remote JVM has already opened socket for Dynamic Attach
 static int check_socket(int pid) {
@@ -83,15 +88,20 @@ static int connect_socket(int pid) {
 }
 
 // Send command with arguments to socket
-static void write_command(int fd, int argc, char** argv) {
+static int write_command(int fd, int argc, char** argv) {
     // Protocol version
-    write(fd, "1", 2);
+    if (write(fd, "1", 2) <= 0) {
+        return 0;
+    }
 
     int i;
     for (i = 0; i < 4; i++) {
         const char* arg = i < argc ? argv[i] : "";
-        write(fd, arg, strlen(arg) + 1);
+        if (write(fd, arg, strlen(arg) + 1) <= 0) {
+            return 0;
+        }
     }
+    return 1;
 }
 
 // Mirror response from remote JVM to stdout
@@ -111,18 +121,22 @@ int main(int argc, char** argv) {
     
     int pid = atoi(argv[1]);
     if (!check_socket(pid) && !start_attach_mechanism(pid)) {
-        printf("Could not start attach mechanism\n");
+        print_error("Could not start attach mechanism");
         return 1;
     }
 
     int fd = connect_socket(pid);
     if (fd == -1) {
-        printf("Could not connect to socket\n");
+        print_error("Could not connect to socket");
         return 1;
     }
     
     printf("Connected to remote JVM\n");
-    write_command(fd, argc - 2, argv + 2);
+    if (!write_command(fd, argc - 2, argv + 2)) {
+        print_error("Error writing to socket");
+        close(fd);
+        return 1;
+    }
 
     printf("Response code = ");
     read_response(fd);
