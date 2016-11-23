@@ -10,7 +10,7 @@ No installed JDK required, works with just JRE.
 This is the lightweight native version of HotSpot Attach API  
 https://docs.oracle.com/javase/8/docs/jdk/api/attach/spec/
 
-Supported commands:
+[Supported commands](http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/812ed44725b8/src/share/vm/services/attachListener.cpp#l388):
  - **load**            : load agent library
  - **properties**      : print system properties
  - **agentProperties** : print agent properties
@@ -21,3 +21,12 @@ Supported commands:
  - **setflag**         : modify manageable VM flag
  - **printflag**       : print VM flag
  - **jcmd**            : execute jcmd command
+
+### Examples
+#### Load JVMTI agent
+
+    $ jattach <pid> load <.so-path> { true | false } [ options ]
+
+Where `true` means that the path is absolute, `false` -- the path is relative.
+
+`options` are passed to the agent.
