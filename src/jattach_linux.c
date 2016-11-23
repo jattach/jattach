@@ -46,7 +46,7 @@ const char* get_temp_directory() {
     if (temp_path == NULL) {
         int pathSize = confstr(_CS_DARWIN_USER_TEMP_DIR, temp_path_storage, PATH_MAX);
         if (pathSize == 0 || pathSize > PATH_MAX) {
-            strlcpy(temp_path_storage, "/tmp/", sizeof (temp_path_storage));
+            strlcpy(temp_path_storage, "/tmp", sizeof (temp_path_storage));
         }
         temp_path = temp_path_storage;
     }
@@ -55,14 +55,14 @@ const char* get_temp_directory() {
 #else // __APPLE__
 
 const char* get_temp_directory() {
-    return "/tmp/";
+    return "/tmp";
 }
 #endif // __APPLE__
 
 // Check if remote JVM has already opened socket for Dynamic Attach
 static int check_socket(int pid) {
     char path[PATH_MAX];
-    snprintf(path, PATH_MAX, "%s.java_pid%d", get_temp_directory(), pid);
+    snprintf(path, PATH_MAX, "%s/.java_pid%d", get_temp_directory(), pid);
 
     struct stat stats;
     return stat(path, &stats) == 0 && S_ISSOCK(stats.st_mode);
@@ -76,7 +76,7 @@ static int start_attach_mechanism(int pid) {
     
     int fd = creat(path, 0660);
     if (fd == -1) {
-        snprintf(path, PATH_MAX, "%s.attach_pid%d", get_temp_directory(), pid);
+        snprintf(path, PATH_MAX, "%s/.attach_pid%d", get_temp_directory(), pid);
         fd = creat(path, 0660);
         if (fd == -1) {
             return 0;
@@ -107,7 +107,7 @@ static int connect_socket(int pid) {
     
     struct sockaddr_un addr;
     addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, sizeof(addr.sun_path), "%s.java_pid%d", get_temp_directory(), pid);
+    snprintf(addr.sun_path, sizeof(addr.sun_path), "%s/.java_pid%d", get_temp_directory(), pid);
 
     if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
         close(fd);
