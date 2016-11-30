@@ -3,11 +3,14 @@ ifneq ($(findstring Windows,$(OS)),)
   CFLAGS=/O2 /D_CRT_SECURE_NO_WARNINGS
   JATTACH_EXE=jattach.exe
 else
+  ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+  RPM_ROOT=$(ROOT_DIR)/build/rpm
+  SOURCES=$(RPM_ROOT)/SOURCES
+  SPEC_FILE=jattach.spec
   CC=gcc
   CFLAGS=-O2
   JATTACH_EXE=jattach
 endif
-
 
 all: build build/$(JATTACH_EXE)
 
@@ -22,3 +25,27 @@ build/jattach.exe: src/jattach_windows.c
 
 clean:
 	rm -rf build
+
+$(RPM_ROOT):
+	mkdir -p $(RPM_ROOT)
+
+rpm-dirs: $(RPM_ROOT)
+	mkdir -p $(RPM_ROOT)/SPECS
+	mkdir -p $(SOURCES)/bin
+	mkdir -p $(RPM_ROOT)/BUILD
+	mkdir -p $(RPM_ROOT)/SRPMS
+	mkdir -p $(RPM_ROOT)/RPMS
+	mkdir -p $(RPM_ROOT)/tmp
+
+rpm: rpm-dirs build build/$(JATTACH_EXE)
+	cp $(SPEC_FILE) $(RPM_ROOT)/
+	cp build/jattach $(SOURCES)/bin/
+	rpmbuild -bb \
+                --define '_topdir $(RPM_ROOT)' \
+                --define '_tmppath $(RPM_ROOT)/tmp' \
+                --clean \
+                --rmsource \
+                --rmspec \
+                --buildroot $(RPM_ROOT)/tmp/build-root \
+                $(RPM_ROOT)/jattach.spec
+
