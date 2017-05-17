@@ -29,10 +29,6 @@
 
 #define PATH_MAX 1024
 
-static void print_error(const char* msg) {
-    printf("%s (error code = %d)\n", msg, errno);
-}
-
 // See hotspot/src/os/bsd/vm/os_bsd.cpp
 // This must be hard coded because it's the system's temporary
 // directory not the java application's temp directory, ala java.io.tmpdir.
@@ -149,20 +145,28 @@ int main(int argc, char** argv) {
     }
     
     int pid = atoi(argv[1]);
+    if (pid == 0) {
+        perror("Invalid pid provided");
+        return 1;
+    }
+
+    // Make write() return EPIPE instead of silent process termination
+    signal(SIGPIPE, SIG_IGN);
+
     if (!check_socket(pid) && !start_attach_mechanism(pid)) {
-        print_error("Could not start attach mechanism");
+        perror("Could not start attach mechanism");
         return 1;
     }
 
     int fd = connect_socket(pid);
     if (fd == -1) {
-        print_error("Could not connect to socket");
+        perror("Could not connect to socket");
         return 1;
     }
     
     printf("Connected to remote JVM\n");
     if (!write_command(fd, argc - 2, argv + 2)) {
-        print_error("Error writing to socket");
+        perror("Error writing to socket");
         close(fd);
         return 1;
     }
