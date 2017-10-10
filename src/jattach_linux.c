@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-#ifdef __linux__
-#define _GNU_SOURCE
-#include <sched.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,44 +21,43 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/syscall.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
 
-#define PATH_MAX 1024
+#define MAX_PATH 1024
 
-// See hotspot/src/os/bsd/vm/os_bsd.cpp
-// This must be hard coded because it's the system's temporary
-// directory not the java application's temp directory, ala java.io.tmpdir.
+
 #ifdef __APPLE__
-// macosx has a secure per-user temporary directory
 
-char temp_path_storage[PATH_MAX];
-
+// macOS has a secure per-user temporary directory
 const char* get_temp_directory() {
-    static char *temp_path = NULL;
-    if (temp_path == NULL) {
-        int pathSize = confstr(_CS_DARWIN_USER_TEMP_DIR, temp_path_storage, PATH_MAX);
-        if (pathSize == 0 || pathSize > PATH_MAX) {
-            strlcpy(temp_path_storage, "/tmp", sizeof (temp_path_storage));
+    static char temp_path_storage[MAX_PATH] = {0};
+
+    if (temp_path_storage[0] == 0) {
+        int path_size = confstr(_CS_DARWIN_USER_TEMP_DIR, temp_path_storage, MAX_PATH);
+        if (path_size == 0 || path_size > MAX_PATH) {
+            strcpy(temp_path_storage, "/tmp");
         }
-        temp_path = temp_path_storage;
     }
-    return temp_path;
+    return temp_path_storage;
 }
+
 #else // __APPLE__
 
 const char* get_temp_directory() {
     return "/tmp";
 }
+
 #endif // __APPLE__
 
 // Check if remote JVM has already opened socket for Dynamic Attach
 static int check_socket(int pid) {
-    char path[PATH_MAX];
-    snprintf(path, PATH_MAX, "%s/.java_pid%d", get_temp_directory(), pid);
+    char path[MAX_PATH];
+    snprintf(path, MAX_PATH, "%s/.java_pid%d", get_temp_directory(), pid);
 
     struct stat stats;
     return stat(path, &stats) == 0 && S_ISSOCK(stats.st_mode);
@@ -72,12 +66,12 @@ static int check_socket(int pid) {
 // Force remote JVM to start Attach listener.
 // HotSpot will start Attach listener in response to SIGQUIT if it sees .attach_pid file
 static int start_attach_mechanism(int pid, int nspid) {
-    char path[PATH_MAX];
-    snprintf(path, PATH_MAX, "/proc/%d/cwd/.attach_pid%d", nspid, nspid);
+    char path[MAX_PATH];
+    snprintf(path, MAX_PATH, "/proc/%d/cwd/.attach_pid%d", nspid, nspid);
     
     int fd = creat(path, 0660);
     if (fd == -1) {
-        snprintf(path, PATH_MAX, "%s/.attach_pid%d", get_temp_directory(), nspid);
+        snprintf(path, MAX_PATH, "%s/.attach_pid%d", get_temp_directory(), nspid);
         fd = creat(path, 0660);
         if (fd == -1) {
             return 0;
@@ -197,7 +191,8 @@ static int enter_mount_ns(int pid) {
         return 1;
     }
 
-    return setns(newns, CLONE_NEWNS) < 0 ? 0 : 1;
+    // Some ancient Linux distributions do not have setns() function
+    return syscall(__NR_setns, newns, 0) < 0 ? 0 : 1;
 #else
     return 1;
 #endif
