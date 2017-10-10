@@ -2,6 +2,12 @@ ifneq ($(findstring Windows,$(OS)),)
   CL=cl.exe
   CFLAGS=/O2 /D_CRT_SECURE_NO_WARNINGS
   JATTACH_EXE=jattach.exe
+else 
+	UNAME_S := $(shell uname -s)
+ifneq ($(findstring FreeBSD,$(UNAME_S)),)
+  CC=cc
+  CFLAGS=-O2
+  JATTACH_EXE=jattach
 else
   ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
   RPM_ROOT=$(ROOT_DIR)/build/rpm
@@ -10,6 +16,7 @@ else
   CC=gcc
   CFLAGS=-O2
   JATTACH_EXE=jattach
+endif
 endif
 
 all: build build/$(JATTACH_EXE)
