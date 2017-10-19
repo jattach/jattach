@@ -63,6 +63,19 @@ static int check_socket(int pid) {
     return stat(path, &stats) == 0 && S_ISSOCK(stats.st_mode);
 }
 
+// Check if a file is owned by current user
+static int check_file_owner(const char* path) {
+    struct stat stats;
+    if (stat(path, &stats) == 0 && stats.st_uid == geteuid()) {
+        return 1;
+    }
+
+    // Some mounted filesystems may change the ownership of the file.
+    // JVM will not trust such file, so it's better to remove it and try a different path
+    unlink(path);
+    return 0;
+}
+
 // Force remote JVM to start Attach listener.
 // HotSpot will start Attach listener in response to SIGQUIT if it sees .attach_pid file
 static int start_attach_mechanism(int pid, int nspid) {
@@ -70,14 +83,15 @@ static int start_attach_mechanism(int pid, int nspid) {
     snprintf(path, MAX_PATH, "/proc/%d/cwd/.attach_pid%d", nspid, nspid);
     
     int fd = creat(path, 0660);
-    if (fd == -1) {
+    if (fd == -1 || close(fd) == 0 && !check_file_owner(path)) {
+        // Failed to create attach trigger in current directory. Retry in /tmp
         snprintf(path, MAX_PATH, "%s/.attach_pid%d", get_temp_directory(), nspid);
         fd = creat(path, 0660);
         if (fd == -1) {
             return 0;
         }
+        close(fd);
     }
-    close(fd);
     
     // We have to still use the host namespace pid here for the kill() call
     kill(pid, SIGQUIT);
@@ -141,30 +155,27 @@ static void read_response(int fd) {
 // On Linux, get the innermost pid namespace pid for the specified host pid
 static int nspid_for_pid(int pid) {
 #ifdef __linux__
-    int nspid = pid;
     char status[64];
-    char *line = NULL;
-    FILE *status_file;
-    size_t size;
-
     snprintf(status, sizeof(status), "/proc/%d/status", pid);
-    status_file = fopen(status, "r");
 
-    while (getline(&line, &size, status_file) != -1) {
-        if (strstr(line, "NStgid:") != NULL) {
-            // PID namespaces can be nested; the last one is the innermost one
-            nspid = (int)strtol(strrchr(line, '\t'), NULL, 10);
+    FILE* status_file = fopen(status, "r");
+    if (status_file != NULL) {
+        char* line = NULL;
+        size_t size;
+
+        while (getline(&line, &size, status_file) != -1) {
+            if (strstr(line, "NStgid:") != NULL) {
+                // PID namespaces can be nested; the last one is the innermost one
+                pid = (int)strtol(strrchr(line, '\t'), NULL, 10);
+            }
         }
-    }
 
-    if (line != NULL) {
         free(line);
+        fclose(status_file);
     }
-    fclose(status_file);
-    return nspid;
-#else
-    return pid;
 #endif
+
+    return pid;
 }
 
 static int enter_mount_ns(int pid) {
