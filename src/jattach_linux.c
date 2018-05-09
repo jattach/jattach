@@ -83,7 +83,7 @@ static int start_attach_mechanism(int pid, int nspid) {
     snprintf(path, MAX_PATH, "/proc/%d/cwd/.attach_pid%d", nspid, nspid);
     
     int fd = creat(path, 0660);
-    if (fd == -1 || close(fd) == 0 && !check_file_owner(path)) {
+    if (fd == -1 || (close(fd) == 0 && !check_file_owner(path))) {
         // Failed to create attach trigger in current directory. Retry in /tmp
         snprintf(path, MAX_PATH, "%s/.attach_pid%d", get_temp_directory(), nspid);
         fd = creat(path, 0660);
@@ -144,12 +144,24 @@ static int write_command(int fd, int argc, char** argv) {
 }
 
 // Mirror response from remote JVM to stdout
-static void read_response(int fd) {
+static int read_response(int fd) {
     char buf[8192];
-    ssize_t bytes;
-    while ((bytes = read(fd, buf, sizeof(buf))) > 0) {
-        fwrite(buf, 1, bytes, stdout);
+    ssize_t bytes = read(fd, buf, sizeof(buf) - 1);
+    if (bytes <= 0) {
+        perror("Error reading response");
+        return 1;
     }
+
+    // First line of response is the command result code
+    buf[bytes] = 0;
+    int result = atoi(buf);
+
+    do {
+        fwrite(buf, 1, bytes, stdout);
+        bytes = read(fd, buf, sizeof(buf));
+    } while (bytes > 0);
+
+    return result;
 }
 
 // On Linux, get the innermost pid namespace pid for the specified host pid
@@ -248,10 +260,11 @@ int main(int argc, char** argv) {
     }
 
     printf("Response code = ");
-    read_response(fd);
+    fflush(stdout);
 
+    int result = read_response(fd);
     printf("\n");
     close(fd);
 
-    return 0;
+    return result;
 }

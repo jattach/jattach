@@ -120,13 +120,13 @@ static int inject_thread(int pid, char* pipeName, int argc, char** argv) {
     if (hProcess == NULL && GetLastError() == ERROR_ACCESS_DENIED) {
         if (!enable_debug_privileges()) {
             print_error("Not enough privileges", GetLastError());
-            return 1;
+            return 0;
         }
         hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)pid);
     }
     if (hProcess == NULL) {
         print_error("Could not open process", GetLastError());
-        return 1;
+        return 0;
     }
 
     LPTHREAD_START_ROUTINE code = allocate_code(hProcess);
@@ -134,14 +134,14 @@ static int inject_thread(int pid, char* pipeName, int argc, char** argv) {
     if (data == NULL) {
         print_error("Could not allocate memory in target process", GetLastError());
         CloseHandle(hProcess);
-        return 1;
+        return 0;
     }
 
-    int result = 0;
+    int success = 1;
     HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, code, data, 0, NULL);
     if (hThread == NULL) {
         print_error("Could not create remote thread", GetLastError());
-        result = 1;
+        success = 0;
     } else {
         printf("Connected to remote process\n");
         WaitForSingleObject(hThread, INFINITE);
@@ -149,7 +149,7 @@ static int inject_thread(int pid, char* pipeName, int argc, char** argv) {
         GetExitCodeThread(hThread, &exitCode);
         if (exitCode != 0) {
             print_error("Attach is not supported by the target process", exitCode);
-            result = 1;
+            success = 0;
         }
         CloseHandle(hThread);
     }
@@ -158,18 +158,29 @@ static int inject_thread(int pid, char* pipeName, int argc, char** argv) {
     VirtualFreeEx(hProcess, data, 0, MEM_RELEASE);
     CloseHandle(hProcess);
 
-    return result;
+    return success;
 }
 
 // JVM response is read from the pipe and mirrored to stdout
-static void read_response(HANDLE hPipe) {
+static int read_response(HANDLE hPipe) {
     ConnectNamedPipe(hPipe, NULL);
 
     char buf[8192];
     DWORD bytesRead;
-    while (ReadFile(hPipe, buf, sizeof(buf), &bytesRead, NULL)) {
-        fwrite(buf, 1, bytesRead, stdout);
+    if (!ReadFile(hPipe, buf, sizeof(buf) - 1, &bytesRead, NULL)) {
+        print_error("Error reading response", GetLastError());
+        return 1;
     }
+
+    // First line of response is the command result code
+    buf[bytesRead] = 0;
+    int result = atoi(buf);
+
+    do {
+        fwrite(buf, 1, bytesRead, stdout);
+    } while (ReadFile(hPipe, buf, sizeof(buf), &bytesRead, NULL));
+
+    return result;
 }
 
 int main(int argc, char** argv) {
@@ -189,13 +200,17 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    int result = inject_thread(pid, pipeName, argc - 2, argv + 2);
-    if (result == 0) {
-        printf("Response code = ");
-        read_response(hPipe);
-        printf("\n");
+    if (!inject_thread(pid, pipeName, argc - 2, argv + 2)) {
+        CloseHandle(hPipe);
+        return 1;
     }
 
+    printf("Response code = ");
+    fflush(stdout);
+
+    int result = read_response(hPipe);
+    printf("\n");
     CloseHandle(hPipe);
-    return 0;
+
+    return result;
 }
