@@ -30,3 +30,16 @@ https://docs.oracle.com/javase/8/docs/jdk/api/attach/spec/
 Where `true` means that the path is absolute, `false` -- the path is relative.
 
 `options` are passed to the agent.
+
+### Installation
+#### FreeBSD
+
+On FreeBSD, you can use the following command to install `jattach` package:
+
+    $ pkg install jattach
+
+#### Alpine Linux
+
+On Alpine Linux, you can use the following command to install `jattach` package from the edge/testing repository:
+
+    $ apk add --no-cache jattach --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing/

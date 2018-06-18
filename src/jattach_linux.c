@@ -34,8 +34,6 @@
 
 #ifdef __APPLE__
 
-#include <sys/sysctl.h>
-
 // macOS has a secure per-user temporary directory
 const char* get_temp_directory() {
     static char temp_path_storage[MAX_PATH] = {0};
@@ -49,36 +47,15 @@ const char* get_temp_directory() {
     return temp_path_storage;
 }
 
-int get_process_info(int pid, uid_t* uid, gid_t* gid, int* nspid) {
-    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, pid};
-    struct kinfo_proc info;
-    size_t len = sizeof(info);
-
-    if (sysctl(mib, 4, &info, &len, NULL, 0) < 0 || len <= 0) {
-        return 0;
-    }
-
-    *uid = info.kp_eproc.e_ucred.cr_uid;
-    *gid = info.kp_eproc.e_ucred.cr_gid;
-    *nspid = pid;
-    return 1;
-}
-
-// This is a Linux-specific API; nothing to do on macOS
-int enter_mount_ns(int pid) {
-    return 1;
-}
-
-// Not used on macOS
-int alt_lookup_nspid(int pid) {
-    return pid;
-}
-
-#else // Linux
+#else // Linux and FreeBSD
 
 const char* get_temp_directory() {
     return "/tmp";
 }
+
+#endif
+
+#ifdef __linux__
 
 int get_process_info(int pid, uid_t* uid, gid_t* gid, int* nspid) {
     char status[64];
@@ -191,6 +168,44 @@ int alt_lookup_nspid(int pid) {
     }
 
     return -1;
+}
+
+#else // macOS and FreeBSD
+
+#include <sys/sysctl.h>
+
+#ifdef __FreeBSD__
+#include <sys/user.h>
+#endif
+
+int get_process_info(int pid, uid_t* uid, gid_t* gid, int* nspid) {
+    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, pid};
+    struct kinfo_proc info;
+    size_t len = sizeof(info);
+
+    if (sysctl(mib, 4, &info, &len, NULL, 0) < 0 || len <= 0) {
+        return 0;
+    }
+
+#ifdef __FreeBSD__
+    *uid = info.ki_uid;
+    *gid = info.ki_groups[0];
+#else // macOS
+    *uid = info.kp_eproc.e_ucred.cr_uid;
+    *gid = info.kp_eproc.e_ucred.cr_gid;
+#endif
+    *nspid = pid;
+    return 1;
+}
+
+// This is a Linux-specific API; nothing to do on macOS and FreeBSD
+int enter_mount_ns(int pid) {
+    return 1;
+}
+
+// Not used on macOS and FreeBSD
+int alt_lookup_nspid(int pid) {
+    return pid;
 }
 
 #endif
