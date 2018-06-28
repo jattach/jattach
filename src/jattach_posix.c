@@ -91,24 +91,23 @@ int enter_mount_ns(int pid) {
     char path[128];
     snprintf(path, sizeof(path), "/proc/%d/ns/mnt", pid);
 
-    // We're leaking the oldns and newns descriptors, but this is a short-running
-    // tool, so they will be closed when the process exits anyway.
-    int oldns, newns;
-    if ((oldns = open("/proc/self/ns/mnt", O_RDONLY)) < 0 || (newns = open(path, O_RDONLY)) < 0) {
-        return 0;
-    }
-
     struct stat oldns_stat, newns_stat;
-    if (fstat(oldns, &oldns_stat) < 0 || fstat(newns, &newns_stat) < 0) {
-        return 0;
-    }
-    if (oldns_stat.st_ino == newns_stat.st_ino) {
-        // Don't try to call setns() if we're in the same namespace already.
-        return 1;
+    if (stat("/proc/self/ns/mnt", &oldns_stat) == 0 && stat(path, &newns_stat) == 0) {
+        // Don't try to call setns() if we're in the same namespace already
+        if (oldns_stat.st_ino != newns_stat.st_ino) {
+            int newns = open(path, O_RDONLY);
+            if (newns < 0) {
+                return 0;
+            }
+
+            // Some ancient Linux distributions do not have setns() function
+            int result = syscall(__NR_setns, newns, 0);
+            close(newns);
+            return result < 0 ? 0 : 1;
+        }
     }
 
-    // Some ancient Linux distributions do not have setns() function
-    return syscall(__NR_setns, newns, 0) < 0 ? 0 : 1;
+    return 1;
 }
 
 // The first line of /proc/pid/sched looks like
@@ -253,13 +252,13 @@ static int start_attach_mechanism(int pid, int nspid) {
     // We have to still use the host namespace pid here for the kill() call
     kill(pid, SIGQUIT);
     
+    // Start with 20 ms sleep and increment delay each iteration
+    struct timespec ts = {0, 20000000};
     int result;
-    struct timespec ts = {0, 100000000};
-    int retry = 0;
     do {
         nanosleep(&ts, NULL);
         result = check_socket(nspid);
-    } while (!result && ++retry < 10);
+    } while (!result && (ts.tv_nsec += 20000000) < 300000000);
 
     unlink(path);
     return result;
@@ -323,7 +322,10 @@ static int read_response(int fd) {
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        printf("Usage: jattach <pid> <cmd> <args> ...\n");
+        printf("jattach " JATTACH_VERSION " built on " __DATE__ "\n"
+               "Copyright 2018 Andrei Pangin\n"
+               "\n"
+               "Usage: jattach <pid> <cmd> [args ...]\n");
         return 1;
     }
     
@@ -344,13 +346,13 @@ int main(int argc, char** argv) {
     }
 
     if (nspid < 0 && (nspid = alt_lookup_nspid(pid)) < 0) {
-        fprintf(stderr, "WARNING: couldn't find container pid of the target process\n");
+        printf("WARNING: couldn't find container pid of the target process\n");
         nspid = pid;
     }
 
     // Make sure our /tmp and target /tmp is the same
     if (!enter_mount_ns(pid)) {
-        fprintf(stderr, "WARNING: couldn't enter target process mnt namespace\n");
+        printf("WARNING: couldn't enter target process mnt namespace\n");
     }
     
     // Dynamic attach is allowed only for the clients with the same euid/egid.

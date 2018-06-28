@@ -1,5 +1,5 @@
 Name:		jattach
-Version:	0.1
+Version:	1.3
 Release:	1
 Summary:	JVM Dynamic Attach utility
 

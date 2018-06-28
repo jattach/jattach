@@ -1,3 +1,5 @@
+JATTACH_VERSION=1.3
+
 ifneq ($(findstring Windows,$(OS)),)
   CL=cl.exe
   CFLAGS=/O2 /D_CRT_SECURE_NO_WARNINGS
@@ -24,11 +26,11 @@ all: build build/$(JATTACH_EXE)
 build:
 	mkdir -p build
 
-build/jattach: src/jattach_linux.c
-	$(CC) $(CFLAGS) -o $@ $^
+build/jattach: src/jattach_posix.c
+	$(CC) $(CFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -o $@ $^
 
 build/jattach.exe: src/jattach_windows.c
-	$(CL) $(CFLAGS) /Fobuild/jattach.obj /Fe$@ $^ advapi32.lib
+	$(CL) $(CFLAGS) /DJATTACH_VERSION=\"$(JATTACH_VERSION)\" /Fobuild/jattach.obj /Fe$@ $^ advapi32.lib
 
 clean:
 	rm -rf build

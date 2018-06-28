@@ -185,7 +185,10 @@ static int read_response(HANDLE hPipe) {
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        printf("Usage: jattach <pid> <cmd> <args> ...\n");
+        printf("jattach " JATTACH_VERSION " built on " __DATE__ "\n"
+               "Copyright 2018 Andrei Pangin\n"
+               "\n"
+               "Usage: jattach <pid> <cmd> [args ...]\n");
         return 1;
     }
 
