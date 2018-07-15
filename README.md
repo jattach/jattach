@@ -43,3 +43,9 @@ On FreeBSD, you can use the following command to install `jattach` package:
 On Alpine Linux, you can use the following command to install `jattach` package from the edge/testing repository:
 
     $ apk add --no-cache jattach --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing/
+
+#### Archlinux
+
+[jattach](https://aur.archlinux.org/packages/jattach/) package can be installed from [AUR](https://wiki.archlinux.org/index.php/Arch_User_Repository) using one of [AUR helpers](https://wiki.archlinux.org/index.php/AUR_helpers), e.g., `yay`:
+
+    $ yay -S jattach
