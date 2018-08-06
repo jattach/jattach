@@ -5,7 +5,7 @@
 The utility to send commands to remote JVM via Dynamic Attach mechanism.
 
 All-in-one **jmap + jstack + jcmd + jinfo** functionality in a single tiny program.  
-No installed JDK required, works with just JRE.
+No installed JDK required, works with just JRE. Supports Linux containers.
 
 This is the lightweight native version of HotSpot Attach API  
 https://docs.oracle.com/javase/8/docs/jdk/api/attach/spec/
@@ -30,6 +30,10 @@ https://docs.oracle.com/javase/8/docs/jdk/api/attach/spec/
 Where `true` means that the path is absolute, `false` -- the path is relative.
 
 `options` are passed to the agent.
+
+#### List available jcmd commands 
+
+    $ jattach <pid> jcmd help -all
 
 ### Installation
 #### FreeBSD
