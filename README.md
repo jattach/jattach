@@ -33,7 +33,7 @@ Where `true` means that the path is absolute, `false` -- the path is relative.
 
 #### List available jcmd commands 
 
-    $ jattach <pid> jcmd help -all
+    $ jattach <pid> jcmd "help -all"
 
 ### Installation
 #### FreeBSD
