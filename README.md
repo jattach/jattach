@@ -44,7 +44,7 @@ On FreeBSD, you can use the following command to install `jattach` package:
 
 #### Alpine Linux
 
-On Alpine Linux, you can use the following command to install `jattach` package from the edge/testing repository:
+On Alpine Linux, you can use the following command to install `jattach` package from the edge/community repository:
 
     $ apk add --no-cache jattach --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/
 
