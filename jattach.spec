@@ -1,5 +1,5 @@
 Name:		jattach
-Version:	1.3
+Version:	1.5
 Release:	1
 Summary:	JVM Dynamic Attach utility
 
@@ -35,5 +35,9 @@ install -p -m 555 %{_sourcedir}/bin/jattach ${BIN}
 /usr/bin/jattach
 
 %changelog
+* Wed Jan 09 2018 Vadim Tsesko <incubos@yandex.com> - 1.5-1
+- Improved attach to containerized JVMs
+- chroot support
+
 * Wed Nov 30 2016 Vadim Tsesko <incubos@yandex.com> - 0.1-1
 - Initial version
