@@ -4,8 +4,16 @@ ifneq ($(findstring Windows,$(OS)),)
   CL=cl.exe
   CFLAGS=/O2 /D_CRT_SECURE_NO_WARNINGS
   JATTACH_EXE=jattach.exe
-else 
+else
   UNAME_S:=$(shell uname -s)
+  ifneq ($(UNAME_S),Darwin)
+    CCFLAGS =+ -D OSX
+    CC = gcc
+    CXX = g++
+    ifneq (,$(findstring -std=c++11,$(CXXFLAGS)))
+      CXXFLAGS += -stdlib=libc++
+    endif
+  endif
   ifneq ($(findstring FreeBSD,$(UNAME_S)),)
     CC=cc
     CFLAGS=-O2
