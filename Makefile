@@ -16,7 +16,7 @@ else
     SOURCES=$(RPM_ROOT)/SOURCES
     SPEC_FILE=jattach.spec
     CC=gcc
-    CFLAGS=-O2
+    CFLAGS ?= -O2
     JATTACH_EXE=jattach
   endif
 endif
@@ -27,7 +27,7 @@ build:
 	mkdir -p build
 
 build/jattach: src/jattach_posix.c
-	$(CC) $(CFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -o $@ $^
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -o $@ $^
 
 build/jattach.exe: src/jattach_windows.c
 	$(CL) $(CFLAGS) /DJATTACH_VERSION=\"$(JATTACH_VERSION)\" /Fobuild/jattach.obj /Fe$@ $^ advapi32.lib /link /SUBSYSTEM:CONSOLE,5.02
