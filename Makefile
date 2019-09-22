@@ -8,7 +8,7 @@ else
   UNAME_S:=$(shell uname -s)
   ifneq ($(findstring FreeBSD,$(UNAME_S)),)
     CC=cc
-    CFLAGS=-O2
+    CFLAGS ?= -O2
     JATTACH_EXE=jattach
   else
     ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
