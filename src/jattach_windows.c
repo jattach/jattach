@@ -39,14 +39,25 @@ DWORD WINAPI remote_thread_entry(LPVOID param) {
     CallData* data = (CallData*)param;
 
     HMODULE libJvm = data->GetModuleHandleA(data->strJvm);
-    if (libJvm != NULL) {
-        JVM_EnqueueOperation_t JVM_EnqueueOperation = (JVM_EnqueueOperation_t)data->GetProcAddress(libJvm, data->strEnqueue);
-        if (JVM_EnqueueOperation != NULL) {
-            return (DWORD)JVM_EnqueueOperation(data->args[0], data->args[1], data->args[2], data->args[3], data->pipeName);
+    if (libJvm == NULL) {
+        return 1001;
+    }
+
+    JVM_EnqueueOperation_t JVM_EnqueueOperation = (JVM_EnqueueOperation_t)data->GetProcAddress(libJvm, data->strEnqueue + 1);
+    if (JVM_EnqueueOperation == NULL) {
+        // Try alternative name: _JVM_EnqueueOperation@20
+        data->strEnqueue[21] = '@';
+        data->strEnqueue[22] = '2';
+        data->strEnqueue[23] = '0';
+        data->strEnqueue[24] = 0;
+
+        JVM_EnqueueOperation = (JVM_EnqueueOperation_t)data->GetProcAddress(libJvm, data->strEnqueue);
+        if (JVM_EnqueueOperation == NULL) {
+            return 1002;
         }
     }
 
-    return 0xffff;
+    return (DWORD)JVM_EnqueueOperation(data->args[0], data->args[1], data->args[2], data->args[3], data->pipeName);
 }
 
 #pragma check_stack
@@ -68,7 +79,7 @@ static LPVOID allocate_data(HANDLE hProcess, char* pipeName, int argc, char** ar
     data.GetModuleHandleA = GetModuleHandleA;
     data.GetProcAddress = GetProcAddress;
     strcpy(data.strJvm, "jvm");
-    strcpy(data.strEnqueue, "JVM_EnqueueOperation");
+    strcpy(data.strEnqueue, "_JVM_EnqueueOperation");
     strcpy(data.pipeName, pipeName);
 
     int i;
@@ -113,6 +124,27 @@ static int enable_debug_privileges() {
     return success ? 1 : 0;
 }
 
+// Fail if attaching 64-bit jattach to 32-bit JVM or vice versa
+static int check_bitness(HANDLE hProcess) {
+#ifdef _WIN64
+    BOOL targetWow64 = FALSE;
+    if (IsWow64Process(hProcess, &targetWow64) && targetWow64) {
+        printf("Cannot attach 64-bit process to 32-bit JVM\n");
+        return 0;
+    }
+#else
+    BOOL thisWow64 = FALSE;
+    BOOL targetWow64 = FALSE;
+    if (IsWow64Process(GetCurrentProcess(), &thisWow64) && IsWow64Process(hProcess, &targetWow64)) {
+        if (thisWow64 != targetWow64)  {
+            printf("Cannot attach 32-bit process to 64-bit JVM\n");
+            return 0;
+        }
+    }
+#endif
+    return 1;
+}
+
 // The idea of Dynamic Attach on Windows is to inject a thread into remote JVM
 // that calls JVM_EnqueueOperation() function exported by HotSpot DLL
 static int inject_thread(int pid, char* pipeName, int argc, char** argv) {
@@ -126,6 +158,11 @@ static int inject_thread(int pid, char* pipeName, int argc, char** argv) {
     }
     if (hProcess == NULL) {
         print_error("Could not open process", GetLastError());
+        return 0;
+    }
+
+    if (!check_bitness(hProcess)) {
+        CloseHandle(hProcess);
         return 0;
     }
 
