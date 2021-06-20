@@ -35,7 +35,7 @@ typedef struct {
 #pragma check_stack(off)
 
 // This code is executed in remote JVM process; be careful with memory it accesses
-DWORD WINAPI remote_thread_entry(LPVOID param) {
+static DWORD WINAPI remote_thread_entry(LPVOID param) {
     CallData* data = (CallData*)param;
 
     HMODULE libJvm = data->GetModuleHandleA(data->strJvm);
@@ -60,12 +60,15 @@ DWORD WINAPI remote_thread_entry(LPVOID param) {
     return (DWORD)JVM_EnqueueOperation(data->args[0], data->args[1], data->args[2], data->args[3], data->pipeName);
 }
 
+static VOID WINAPI remote_thread_entry_end() {
+}
+
 #pragma check_stack
 
 
 // Allocate executable memory in remote process
 static LPTHREAD_START_ROUTINE allocate_code(HANDLE hProcess) {
-    SIZE_T codeSize = 1024;
+    SIZE_T codeSize = (SIZE_T)remote_thread_entry_end - (SIZE_T)remote_thread_entry;
     LPVOID code = VirtualAllocEx(hProcess, NULL, codeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
     if (code != NULL) {
         WriteProcessMemory(hProcess, code, remote_thread_entry, codeSize, NULL);
