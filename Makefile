@@ -1,35 +1,46 @@
-JATTACH_VERSION=1.5
+JATTACH_VERSION=1.6
 
 ifneq ($(findstring Windows,$(OS)),)
   CL=cl.exe
   CFLAGS=/O2 /D_CRT_SECURE_NO_WARNINGS
   JATTACH_EXE=jattach.exe
+  JATTACH_DLL=jattach.dll
 else 
+  CFLAGS ?= -O3
+  JATTACH_EXE=jattach
+
   UNAME_S:=$(shell uname -s)
-  ifneq ($(findstring FreeBSD,$(UNAME_S)),)
-    CC=cc
-    CFLAGS ?= -O2
-    JATTACH_EXE=jattach
+  ifeq ($(UNAME_S),Darwin)
+    JATTACH_DLL=libjattach.dylib
   else
+    JATTACH_DLL=libjattach.so
+  endif
+
+  ifeq ($(UNAME_S),Linux)
     ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
     RPM_ROOT=$(ROOT_DIR)/build/rpm
     SOURCES=$(RPM_ROOT)/SOURCES
     SPEC_FILE=jattach.spec
-    CC=gcc
-    CFLAGS ?= -O2
-    JATTACH_EXE=jattach
   endif
 endif
 
+
+.PHONY: all dll clean rpm-dirs rpm
+
 all: build build/$(JATTACH_EXE)
+
+dll: build build/$(JATTACH_DLL)
 
 build:
 	mkdir -p build
 
-build/jattach: src/jattach_posix.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -o $@ $^
+build/jattach: src/posix/*.c src/posix/*.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -o $@ src/posix/*.c
 
-build/jattach.exe: src/jattach_windows.c
+build/$(JATTACH_DLL): src/posix/*.c src/posix/*.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -fPIC -shared -fvisibility=hidden -o $@ src/posix/*.c
+
+build/jattach.exe: src/windows/jattach.c
 	$(CL) $(CFLAGS) /DJATTACH_VERSION=\"$(JATTACH_VERSION)\" /Fobuild/jattach.obj /Fe$@ $^ advapi32.lib /link /SUBSYSTEM:CONSOLE,5.02
 
 clean:

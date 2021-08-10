@@ -226,9 +226,14 @@ static int read_response(HANDLE hPipe) {
 int main(int argc, char** argv) {
     if (argc < 3) {
         printf("jattach " JATTACH_VERSION " built on " __DATE__ "\n"
-               "Copyright 2018 Andrei Pangin\n"
+               "Copyright 2021 Andrei Pangin\n"
                "\n"
-               "Usage: jattach <pid> <cmd> [args ...]\n");
+               "Usage: jattach <pid> <cmd> [args ...]\n"
+               "\n"
+               "Commands:\n"
+               "    load  threaddump   dumpheap  setflag    properties\n"
+               "    jcmd  inspectheap  datadump  printflag  agentProperties\n"
+               );
         return 1;
     }
 
