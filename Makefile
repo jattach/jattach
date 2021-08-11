@@ -6,13 +6,14 @@ ifneq ($(findstring Windows,$(OS)),)
   JATTACH_EXE=jattach.exe
   JATTACH_DLL=jattach.dll
 else 
-  CFLAGS ?= -O3
   JATTACH_EXE=jattach
 
   UNAME_S:=$(shell uname -s)
   ifeq ($(UNAME_S),Darwin)
+    CFLAGS ?= -O3 -arch x86_64 -arch arm64 -mmacos-version-min=10.12
     JATTACH_DLL=libjattach.dylib
   else
+    CFLAGS ?= -O3
     JATTACH_DLL=libjattach.so
   endif
 
