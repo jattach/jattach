@@ -1,4 +1,4 @@
-JATTACH_VERSION=1.6
+JATTACH_VERSION=2.0
 
 ifneq ($(findstring Windows,$(OS)),)
   CL=cl.exe

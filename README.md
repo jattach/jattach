@@ -22,14 +22,27 @@ https://docs.oracle.com/javase/8/docs/jdk/api/attach/spec/
  - **printflag**       : print VM flag
  - **jcmd**            : execute jcmd command
 
+### Download
+
+Binaries are available on the [Releases](https://github.com/apangin/jattach/releases) page.
+
+On some platforms, you can also [install](#installation) jattach with a package manager.
+
 ### Examples
-#### Load JVMTI agent
+#### Load native agent
 
     $ jattach <pid> load <.so-path> { true | false } [ options ]
 
 Where `true` means that the path is absolute, `false` -- the path is relative.
 
 `options` are passed to the agent.
+
+#### Load Java agent
+
+Java agents are loaded by the special built-in native agent named `instrument`,
+which takes .jar path and its arguments as a single options string.
+
+    $ jattach <pid> load instrument false "javaagent.jar=arguments"
 
 #### List available jcmd commands 
 
