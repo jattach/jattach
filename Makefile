@@ -42,7 +42,7 @@ build/$(JATTACH_DLL): src/posix/*.c src/posix/*.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -fPIC -shared -fvisibility=hidden -o $@ src/posix/*.c
 
 build/jattach.exe: src/windows/jattach.c
-	$(CL) $(CFLAGS) /DJATTACH_VERSION=\"$(JATTACH_VERSION)\" /Fobuild/jattach.obj /Fe$@ $^ advapi32.lib /link /SUBSYSTEM:CONSOLE,5.02
+	$(CL) $(CFLAGS) -I"$(JAVA_HOME)include" -I"$(JAVA_HOME)include\win32" /DJATTACH_VERSION=\"$(JATTACH_VERSION)\" /Fobuild/jattach.obj /Fe$@ $^ advapi32.lib /link /SUBSYSTEM:CONSOLE,5.02
 
 clean:
 	rm -rf build
