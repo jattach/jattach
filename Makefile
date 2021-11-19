@@ -25,6 +25,8 @@ else
   endif
 endif
 
+LIB_JATTACH_SRCS := $(filter-out main.c, $(notdir $(wildcard src/posix/*.c)))
+LIB_JATTACH_OBJS := $(patsubst %.c, build/lib/%.o, $(LIB_JATTACH_SRCS))
 
 .PHONY: all dll clean rpm-dirs rpm
 
@@ -33,9 +35,15 @@ all: build build/$(JATTACH_EXE)
 dll: build build/$(JATTACH_DLL)
 
 build:
-	mkdir -p build
+	mkdir -p build/lib
 
-build/jattach: src/posix/*.c src/posix/*.h
+build/lib/%.o: src/posix/%.c src/posix/*.h build
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+build/lib/jattach.a: $(LIB_JATTACH_OBJS)
+	ar rvs $@ $^
+
+build/jattach: src/posix/main.c build/lib/jattach.a
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -o $@ src/posix/*.c
 
 build/$(JATTACH_DLL): src/posix/*.c src/posix/*.h
