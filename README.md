@@ -2,7 +2,7 @@
 
 ### JVM Dynamic Attach utility
 
-The utility to send commands to remote JVM via Dynamic Attach mechanism.
+The utility to send commands to a JVM process via Dynamic Attach mechanism.
 
 All-in-one **jmap + jstack + jcmd + jinfo** functionality in a single tiny program.  
 No installed JDK required, works with just JRE. Supports Linux containers.
