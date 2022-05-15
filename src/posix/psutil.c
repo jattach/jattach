@@ -144,8 +144,12 @@ int get_process_info(int pid, uid_t* uid, gid_t* gid, int* nspid) {
         } else if (strncmp(line, "NStgid:", 7) == 0) {
             // PID namespaces can be nested; the last one is the innermost one
             char* nstgidStr = strtok(line, " \t");
-            nstgidStr = strtok(NULL, " \t");
-            *nspid = atoi(nstgidStr);
+            char* last = NULL;
+            while(nstgidStr != NULL) {
+                last = nstgidStr;
+                nstgidStr = strtok(NULL, " \t");
+            }
+            *nspid = atoi(last);
             nspid_found = 1;
         }
     }
