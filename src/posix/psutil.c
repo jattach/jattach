@@ -129,15 +129,18 @@ int get_process_info(int pid, uid_t* uid, gid_t* gid, int* nspid) {
     int nspid_found = 0;
 
     while (getline(&line, &size, status_file) != -1) {
-        if (strncmp(line, "Uid:", 4) == 0) {
+        if (strncmp(line, "Uid:", 4) == 0 && strtok(line + 4, "\t ") != NULL) {
             // Get the effective UID, which is the second value in the line
-            *uid = (uid_t)atoi(strchr(line + 5, '\t'));
-        } else if (strncmp(line, "Gid:", 4) == 0) {
+            *uid = (uid_t)atoi(strtok(NULL, "\t "));
+        } else if (strncmp(line, "Gid:", 4) == 0 && strtok(line + 4, "\t ") != NULL) {
             // Get the effective GID, which is the second value in the line
-            *gid = (gid_t)atoi(strchr(line + 5, '\t'));
+            *gid = (gid_t)atoi(strtok(NULL, "\t "));
         } else if (strncmp(line, "NStgid:", 7) == 0) {
             // PID namespaces can be nested; the last one is the innermost one
-            *nspid = atoi(strrchr(line, '\t'));
+            char* s;
+            for (s = strtok(line + 7, "\t "); s != NULL; s = strtok(NULL, "\t ")) {
+                *nspid = atoi(s);
+            }
             nspid_found = 1;
         }
     }
