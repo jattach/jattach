@@ -16,7 +16,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <Windows.h>
+#include <windows.h>
+#include <sddl.h>
 
 typedef HMODULE (WINAPI *GetModuleHandle_t)(LPCTSTR lpModuleName);
 typedef FARPROC (WINAPI *GetProcAddress_t)(HMODULE hModule, LPCSTR lpProcName);
@@ -224,14 +225,24 @@ static int read_response(HANDLE hPipe) {
 }
 
 int jattach(int pid, int argc, char** argv) {
+    // When attaching as an Administrator, make sure the target process can connect to our pipe,
+    // i.e. allow read-write access to everyone. For the complete format description, see
+    // https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-string-format
+    SECURITY_ATTRIBUTES sec = {sizeof(SECURITY_ATTRIBUTES), NULL, FALSE};
+    ConvertStringSecurityDescriptorToSecurityDescriptor("D:(A;;GRGW;;;WD)", SDDL_REVISION_1,
+                                                        &sec.lpSecurityDescriptor, NULL);
+
     char pipeName[MAX_PATH];
     sprintf(pipeName, "\\\\.\\pipe\\javatool%d", GetTickCount());
     HANDLE hPipe = CreateNamedPipe(pipeName, PIPE_ACCESS_INBOUND, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-        1, 4096, 8192, NMPWAIT_USE_DEFAULT_WAIT, NULL);
+                                   1, 4096, 8192, NMPWAIT_USE_DEFAULT_WAIT, &sec);
     if (hPipe == NULL) {
         print_error("Could not create pipe", GetLastError());
+        LocalFree(sec.lpSecurityDescriptor);
         return 1;
     }
+
+    LocalFree(sec.lpSecurityDescriptor);
 
     if (!inject_thread(pid, pipeName, argc, argv)) {
         CloseHandle(hPipe);
