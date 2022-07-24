@@ -1,5 +1,5 @@
 Name:		jattach
-Version:	2.0
+Version:	2.1
 Release:	1
 Summary:	JVM Dynamic Attach utility
 
@@ -35,6 +35,10 @@ install -p -m 555 %{_sourcedir}/bin/jattach ${BIN}
 /usr/bin/jattach
 
 %changelog
+* Mon Jul 25 2022 Vadim Tsesko <incubos@yandex.com> - 2.1-1
+- Handle both tabs and spaces when parsing /proc/pid/status
+- Socket timeout while reading response from OpenJ9 VM
+
 * Wed Aug 11 2021 Vadim Tsesko <incubos@yandex.com> - 2.0-1
 - Attach to OpenJ9 VMs
 - Pass agent error codes
