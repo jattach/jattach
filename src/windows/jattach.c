@@ -223,6 +223,33 @@ static int read_response(HANDLE hPipe) {
     return result;
 }
 
+int jattach(int pid, int argc, char** argv) {
+    char pipeName[MAX_PATH];
+    sprintf(pipeName, "\\\\.\\pipe\\javatool%d", GetTickCount());
+    HANDLE hPipe = CreateNamedPipe(pipeName, PIPE_ACCESS_INBOUND, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+        1, 4096, 8192, NMPWAIT_USE_DEFAULT_WAIT, NULL);
+    if (hPipe == NULL) {
+        print_error("Could not create pipe", GetLastError());
+        return 1;
+    }
+
+    if (!inject_thread(pid, pipeName, argc, argv)) {
+        CloseHandle(hPipe);
+        return 1;
+    }
+
+    printf("Response code = ");
+    fflush(stdout);
+
+    int result = read_response(hPipe);
+    printf("\n");
+    CloseHandle(hPipe);
+
+    return result;
+}
+
+#ifdef JATTACH_VERSION
+
 int main(int argc, char** argv) {
     if (argc < 3) {
         printf("jattach " JATTACH_VERSION " built on " __DATE__ "\n"
@@ -238,27 +265,12 @@ int main(int argc, char** argv) {
     }
 
     int pid = atoi(argv[1]);
-
-    char pipeName[MAX_PATH];
-    sprintf(pipeName, "\\\\.\\pipe\\javatool%d", GetTickCount());
-    HANDLE hPipe = CreateNamedPipe(pipeName, PIPE_ACCESS_INBOUND, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-        1, 4096, 8192, NMPWAIT_USE_DEFAULT_WAIT, NULL);
-    if (hPipe == NULL) {
-        print_error("Could not create pipe", GetLastError());
+    if (pid <= 0) {
+        fprintf(stderr, "%s is not a valid process ID\n", argv[1]);
         return 1;
     }
 
-    if (!inject_thread(pid, pipeName, argc - 2, argv + 2)) {
-        CloseHandle(hPipe);
-        return 1;
-    }
-
-    printf("Response code = ");
-    fflush(stdout);
-
-    int result = read_response(hPipe);
-    printf("\n");
-    CloseHandle(hPipe);
-
-    return result;
+    return jattach(pid, argc - 2, argv + 2);
 }
+
+#endif // JATTACH_VERSION

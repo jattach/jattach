@@ -39,7 +39,7 @@ build/jattach: src/posix/*.c src/posix/*.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -o $@ src/posix/*.c
 
 build/$(JATTACH_DLL): src/posix/*.c src/posix/*.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -DJATTACH_VERSION=\"$(JATTACH_VERSION)\" -fPIC -shared -fvisibility=hidden -o $@ src/posix/*.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -fPIC -shared -fvisibility=hidden -o $@ src/posix/*.c
 
 build/jattach.exe: src/windows/jattach.c
 	$(CL) $(CFLAGS) /DJATTACH_VERSION=\"$(JATTACH_VERSION)\" /Fobuild/jattach.obj /Fe$@ $^ advapi32.lib /link /SUBSYSTEM:CONSOLE,5.02
