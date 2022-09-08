@@ -93,15 +93,14 @@ static int alt_lookup_nspid(int pid) {
                 // Check if /proc/<container-pid>/sched points back to <host-pid>
                 snprintf(path, sizeof(path), "/proc/%d/root/proc/%s/sched", pid, entry->d_name);
                 if (sched_get_host_pid(path) == pid) {
-                    closedir(dir);
-                    return atoi(entry->d_name);
+                    pid = atoi(entry->d_name);
+                    break;
                 }
             }
         }
         closedir(dir);
     }
 
-    // Could not find container pid; return host pid as the last resort
     return pid;
 }
 
