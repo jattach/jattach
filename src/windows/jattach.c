@@ -236,7 +236,7 @@ int jattach(int pid, int argc, char** argv) {
     sprintf(pipeName, "\\\\.\\pipe\\javatool%d", GetTickCount());
     HANDLE hPipe = CreateNamedPipe(pipeName, PIPE_ACCESS_INBOUND, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
                                    1, 4096, 8192, NMPWAIT_USE_DEFAULT_WAIT, &sec);
-    if (hPipe == NULL) {
+    if (hPipe == INVALID_HANDLE_VALUE) {
         print_error("Could not create pipe", GetLastError());
         LocalFree(sec.lpSecurityDescriptor);
         return 1;
