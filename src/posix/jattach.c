@@ -64,7 +64,7 @@ int jattach(int pid, int argc, char** argv) {
         result = jattach_hotspot(pid, nspid, argc, argv);
     }
 
-        // Restore original effective user and group IDs
+    // Restore original effective user and group IDs
     if (my_gid != target_gid) {
         setegid(my_gid);
     }
