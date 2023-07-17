@@ -65,11 +65,11 @@ int jattach(int pid, int argc, char** argv) {
     }
 
     // Restore original effective user and group IDs
-    if (my_gid != target_gid) {
-        setegid(my_gid);
+    if (my_gid != target_gid && setegid(my_gid) != 0) {
+        perror("Failed to restore group ID");
     }
-    if (my_uid != target_uid) {
-        seteuid(my_uid);
+    if (my_uid != target_uid && seteuid(my_uid) != 0) {
+        perror("Failed to restore user ID");
     }
 
     return result;
