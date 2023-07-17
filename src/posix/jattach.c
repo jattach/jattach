@@ -57,11 +57,22 @@ int jattach(int pid, int argc, char** argv) {
     // Make write() return EPIPE instead of abnormal process termination
     signal(SIGPIPE, SIG_IGN);
 
+    int result = 0;
     if (is_openj9_process(nspid)) {
-        return jattach_openj9(pid, nspid, argc, argv);
+        result = jattach_openj9(pid, nspid, argc, argv);
     } else {
-        return jattach_hotspot(pid, nspid, argc, argv);
+        result = jattach_hotspot(pid, nspid, argc, argv);
     }
+
+        // Restore original effective user and group IDs
+    if (my_gid != target_gid) {
+        setegid(my_gid);
+    }
+    if (my_uid != target_uid) {
+        seteuid(my_uid);
+    }
+
+    return result;
 }
 
 #ifdef JATTACH_VERSION
