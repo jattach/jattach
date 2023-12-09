@@ -102,17 +102,31 @@ static int connect_socket(int pid) {
 
 // Send command with arguments to socket
 static int write_command(int fd, int argc, char** argv) {
+    char buf[8192];
+    const char* const limit = buf + sizeof(buf);
+
+    // jcmd has 2 arguments maximum; merge excessive arguments into one
+    int cmd_args = argc >= 2 && strcmp(argv[0], "jcmd") == 0 ? 2 : argc >= 4 ? 4 : argc;
+
     // Protocol version
-    if (write(fd, "1", 2) <= 0) {
-        return -1;
-    }
+    char* p = stpncpy(buf, "1", sizeof(buf)) + 1;
 
     int i;
-    for (i = 0; i < 4; i++) {
-        const char* arg = i < argc ? argv[i] : "";
-        if (write(fd, arg, strlen(arg) + 1) <= 0) {
+    for (i = 0; i < argc && p < limit; i++) {
+        if (i >= cmd_args) p[-1] = ' ';
+        p = stpncpy(p, argv[i], limit - p) + 1;
+    }
+    for (i = cmd_args; i < 4 && p < limit; i++) {
+        *p++ = 0;
+    }
+
+    const char* q = p < limit ? p : limit;
+    for (p = buf; p < q; ) {
+        ssize_t bytes = write(fd, p, q - p);
+        if (bytes <= 0) {
             return -1;
         }
+        p += (size_t)bytes;
     }
     return 0;
 }

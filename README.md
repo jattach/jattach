@@ -46,7 +46,7 @@ which takes .jar path and its arguments as a single options string.
 
 #### List available jcmd commands 
 
-    $ jattach <pid> jcmd "help -all"
+    $ jattach <pid> jcmd help -all
 
 ### Installation
 #### FreeBSD

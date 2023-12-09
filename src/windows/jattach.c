@@ -85,10 +85,19 @@ static LPVOID allocate_data(HANDLE hProcess, char* pipeName, int argc, char** ar
     strcpy(data.strJvm, "jvm");
     strcpy(data.strEnqueue, "_JVM_EnqueueOperation");
     strcpy(data.pipeName, pipeName);
+    data.args[0][0] = data.args[1][0] = data.args[2][0] = data.args[3][0] = 0;
 
+    // jcmd has 2 arguments maximum; merge excessive arguments into one
+    int cmd_args = argc >= 2 && strcmp(argv[0], "jcmd") == 0 ? 2 : argc >= 4 ? 4 : argc;
+
+    size_t n = 0;
     int i;
-    for (i = 0; i < 4; i++) {
-        strcpy(data.args[i], i < argc ? argv[i] : "");
+    for (i = 0; i < argc; i++) {
+        if (i < cmd_args) {
+            n = snprintf(data.args[i], sizeof(data.args[i]), "%s", argv[i]);
+        } else if (n < sizeof(data.args[cmd_args - 1])) {
+            n += snprintf(data.args[cmd_args - 1] + n, sizeof(data.args[cmd_args - 1]) - n, " %s", argv[i]);
+        }
     }
 
     LPVOID remoteData = VirtualAllocEx(hProcess, NULL, sizeof(CallData), MEM_COMMIT, PAGE_READWRITE);

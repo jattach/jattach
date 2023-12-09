@@ -47,7 +47,11 @@ static void translate_command(char* buf, size_t bufsize, int argc, char** argv) 
         }
 
     } else if (strcmp(cmd, "jcmd") == 0) {
-        snprintf(buf, bufsize, "ATTACH_DIAGNOSTICS:%s,%s", argc > 1 ? argv[1] : "help", argc > 2 ? argv[2] : "");
+        size_t n = snprintf(buf, bufsize, "ATTACH_DIAGNOSTICS:%s", argc > 1 ? argv[1] : "help");
+        int i;
+        for (i = 2; i < argc && n < bufsize; i++) {
+            n += snprintf(buf + n, bufsize - n, ",%s", argv[i]);
+        }
 
     } else if (strcmp(cmd, "threaddump") == 0) {
         snprintf(buf, bufsize, "ATTACH_DIAGNOSTICS:Thread.print,%s", argc > 1 ? argv[1] : "");
