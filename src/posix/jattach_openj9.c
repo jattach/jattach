@@ -127,7 +127,7 @@ static int write_command(int fd, const char* cmd) {
 }
 
 // Mirror response from remote JVM to stdout
-static int read_response(int fd, const char* cmd) {
+static int read_response(int fd, const char* cmd, int print_output) {
     size_t size = 8192;
     char* buf = malloc(size);
 
@@ -164,8 +164,7 @@ static int read_response(int fd, const char* cmd) {
             // AgentOnLoad error code comes right after AgentInitializationException
             result = strncmp(buf, "ATTACH_ERR AgentInitializationException", 39) == 0 ? atoi(buf + 39) : -1;
         }
-    } else if (strncmp(cmd, "ATTACH_DIAGNOSTICS:", 19) == 0) {
-#ifndef SUPPRESS_OUTPUT
+    } else if (strncmp(cmd, "ATTACH_DIAGNOSTICS:", 19) == 0 && print_output) {
         char* p = strstr(buf, "openj9_diagnostics.string_result=");
         if (p != NULL) {
             // The result of a diagnostic command is encoded in Java Properties format
@@ -173,13 +172,12 @@ static int read_response(int fd, const char* cmd) {
             free(buf);
             return result;
         }
-#endif
     }
 
-#ifndef SUPPRESS_OUTPUT
-    buf[off - 1] = '\n';
-    fwrite(buf, 1, off, stdout);
-#endif
+    if (print_output) {
+        buf[off - 1] = '\n';
+        fwrite(buf, 1, off, stdout);
+    }
 
     free(buf);
     return result;
@@ -383,7 +381,7 @@ int is_openj9_process(int pid) {
     return stat(path, &stats) == 0;
 }
 
-int jattach_openj9(int pid, int nspid, int argc, char** argv) {
+int jattach_openj9(int pid, int nspid, int argc, char** argv, int print_output) {
     int attach_lock = acquire_lock("", "_attachlock");
     if (attach_lock < 0) {
         perror("Could not acquire attach lock");
@@ -421,9 +419,9 @@ int jattach_openj9(int pid, int nspid, int argc, char** argv) {
     notify_semaphore(-1, notif_count);
     release_lock(attach_lock);
 
-#ifndef SUPPRESS_OUTPUT
-    printf("Connected to remote JVM\n");
-#endif
+    if (print_output) {
+        printf("Connected to remote JVM\n");
+    }
 
     char cmd[8192];
     translate_command(cmd, sizeof(cmd), argc, argv);
@@ -434,7 +432,7 @@ int jattach_openj9(int pid, int nspid, int argc, char** argv) {
         return 1;
     }
 
-    int result = read_response(fd, cmd);
+    int result = read_response(fd, cmd, print_output);
     if (result != 1) {
         detach(fd);
     }

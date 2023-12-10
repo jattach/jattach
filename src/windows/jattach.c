@@ -212,7 +212,7 @@ static int inject_thread(int pid, char* pipeName, int argc, char** argv) {
 }
 
 // JVM response is read from the pipe and mirrored to stdout
-static int read_response(HANDLE hPipe) {
+static int read_response(HANDLE hPipe, int print_output) {
     ConnectNamedPipe(hPipe, NULL);
 
     char buf[8192];
@@ -226,14 +226,19 @@ static int read_response(HANDLE hPipe) {
     buf[bytesRead] = 0;
     int result = atoi(buf);
 
-    do {
-        fwrite(buf, 1, bytesRead, stdout);
-    } while (ReadFile(hPipe, buf, sizeof(buf), &bytesRead, NULL));
+    if (print_output) {
+        // Mirror JVM response to stdout
+        printf("JVM response code = ");
+        do {
+            fwrite(buf, 1, bytesRead, stdout);
+        } while (ReadFile(hPipe, buf, sizeof(buf), &bytesRead, NULL));
+         printf("\n");
+     }
 
     return result;
 }
 
-int jattach(int pid, int argc, char** argv) {
+int jattach(int pid, int argc, char** argv, int print_output) {
     // When attaching as an Administrator, make sure the target process can connect to our pipe,
     // i.e. allow read-write access to everyone. For the complete format description, see
     // https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-string-format
@@ -258,11 +263,7 @@ int jattach(int pid, int argc, char** argv) {
         return 1;
     }
 
-    printf("Response code = ");
-    fflush(stdout);
-
-    int result = read_response(hPipe);
-    printf("\n");
+    int result = read_response(hPipe, print_output);
     CloseHandle(hPipe);
 
     return result;
@@ -290,7 +291,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    return jattach(pid, argc - 2, argv + 2);
+    return jattach(pid, argc - 2, argv + 2, 1);
 }
 
 #endif // JATTACH_VERSION
