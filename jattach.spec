@@ -1,11 +1,11 @@
 Name:		jattach
-Version:	2.1
+Version:	2.2
 Release:	1
 Summary:	JVM Dynamic Attach utility
 
 Group:		Development/Tools
 License:	ASL 2.0
-URL:		https://github.com/apangin/jattach
+URL:		https://github.com/jattach/jattach
 Vendor:		Andrei Pangin
 Packager:	Vadim Tsesko <incubos@yandex.com>
 
@@ -35,6 +35,11 @@ install -p -m 555 %{_sourcedir}/bin/jattach ${BIN}
 /usr/bin/jattach
 
 %changelog
+* Wed Jan 10 2024 Andrei Pangin <noreply@pangin.pro> - 2.2-1
+- Automatically concatenate jcmd arguments
+- Fixed attach to OpenJ9 on macOS
+- Fixed container support on Linux 3.x
+
 * Mon Jul 25 2022 Vadim Tsesko <incubos@yandex.com> - 2.1-1
 - Handle both tabs and spaces when parsing /proc/pid/status
 - Socket timeout while reading response from OpenJ9 VM

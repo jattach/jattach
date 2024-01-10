@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Andrei Pangin
+ * Copyright jattach authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,6 @@ int jattach(int pid, int argc, char** argv, int print_output) {
 int main(int argc, char** argv) {
     if (argc < 3) {
         printf("jattach " JATTACH_VERSION " built on " __DATE__ "\n"
-               "Copyright 2021 Andrei Pangin\n"
                "\n"
                "Usage: jattach <pid> <cmd> [args ...]\n"
                "\n"

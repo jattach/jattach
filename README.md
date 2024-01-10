@@ -24,7 +24,7 @@ https://docs.oracle.com/javase/8/docs/jdk/api/attach/spec/
 
 ### Download
 
-Binaries are available on the [Releases](https://github.com/apangin/jattach/releases) page.
+Binaries are available on the [Releases](https://github.com/jattach/jattach/releases) page.
 
 On some platforms, you can also [install](#installation) jattach with a package manager.
 
@@ -49,28 +49,27 @@ which takes .jar path and its arguments as a single options string.
     $ jattach <pid> jcmd help -all
 
 ### Installation
-#### FreeBSD
+#### Debian, Ubuntu
 
-On FreeBSD, you can use the following command to install `jattach` package:
+On Debian and Ubuntu, you can install `jattach` from the official repository:
 
-    $ pkg install jattach
+    # apt install jattach
 
 #### Alpine Linux
 
-On Alpine Linux, you can use the following command to install `jattach` package from the edge/community repository:
+On Alpine Linux, you can install `jattach` package from the edge/community repository:
 
-    $ apk add --no-cache jattach --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/
+    # apk add --no-cache jattach --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/
 
 #### Archlinux
 
 [jattach](https://aur.archlinux.org/packages/jattach/) package can be installed from [AUR](https://wiki.archlinux.org/index.php/Arch_User_Repository) using one of [AUR helpers](https://wiki.archlinux.org/index.php/AUR_helpers), e.g., `yay`:
 
-    $ yay -S jattach
+    # yay -S jattach
 
-#### Debian Linux
+#### FreeBSD
 
-On Debian Linux, you can use the following command to install `jattach` from the [official repository](https://packages.debian.org/search?keywords=jattach):
+On FreeBSD, you can use the following command to install `jattach`:
 
-    $ apt install jattach
+    # pkg install jattach
 
-Packages are provided for **bullseye** (stable), **bookworm** (testing) and **sid** (unstable).
