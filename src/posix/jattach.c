@@ -25,6 +25,8 @@ extern int is_openj9_process(int pid);
 extern int jattach_openj9(int pid, int nspid, int argc, char** argv, int print_output);
 extern int jattach_hotspot(int pid, int nspid, int argc, char** argv, int print_output);
 
+int mnt_changed = 0;
+
 
 __attribute__((visibility("default")))
 int jattach(int pid, int argc, char** argv, int print_output) {
@@ -42,7 +44,7 @@ int jattach(int pid, int argc, char** argv, int print_output) {
     // Network and IPC namespaces are essential for OpenJ9 connection.
     enter_ns(pid, "net");
     enter_ns(pid, "ipc");
-    int mnt_changed = enter_ns(pid, "mnt");
+    mnt_changed = enter_ns(pid, "mnt");
 
     // In HotSpot, dynamic attach is allowed only for the clients with the same euid/egid.
     // If we are running under root, switch to the required euid/egid automatically.

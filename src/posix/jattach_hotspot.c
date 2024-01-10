@@ -27,6 +27,8 @@
 #include "psutil.h"
 
 
+extern int mnt_changed;
+
 // Check if remote JVM has already opened socket for Dynamic Attach
 static int check_socket(int pid) {
     char path[MAX_PATH];
@@ -46,7 +48,7 @@ static uid_t get_file_owner(const char* path) {
 // HotSpot will start Attach listener in response to SIGQUIT if it sees .attach_pid file
 static int start_attach_mechanism(int pid, int nspid) {
     char path[MAX_PATH];
-    snprintf(path, sizeof(path), "/proc/%d/cwd/.attach_pid%d", nspid, nspid);
+    snprintf(path, sizeof(path), "/proc/%d/cwd/.attach_pid%d", mnt_changed > 0 ? nspid : pid, nspid);
 
     int fd = creat(path, 0660);
     if (fd == -1 || (close(fd) == 0 && get_file_owner(path) != geteuid())) {
