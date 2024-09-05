@@ -18,7 +18,7 @@ typedef struct {
     char strJvm[32];
     char strEnqueue[32];
     char pipeName[MAX_PATH];
-    char args[4][MAX_PATH];
+    char args[4][1024];  // JVM has a hard limit for argument length
 } CallData;
 
 
