@@ -55,10 +55,10 @@ static void translate_command(char* buf, size_t bufsize, int argc, char** argv) 
         snprintf(buf, bufsize, "ATTACH_DIAGNOSTICS:Dump.java,%s", argc > 1 ? argv[1] : "");
 
     } else if (strcmp(cmd, "properties") == 0) {
-        strcpy(buf, "ATTACH_GETSYSTEMPROPERTIES");
+        snprintf(buf, bufsize, "ATTACH_GETSYSTEMPROPERTIES");
 
     } else if (strcmp(cmd, "agentProperties") == 0) {
-        strcpy(buf, "ATTACH_GETAGENTPROPERTIES");
+        snprintf(buf, bufsize, "ATTACH_GETAGENTPROPERTIES");
 
     } else {
         snprintf(buf, bufsize, "%s", cmd);
@@ -139,7 +139,11 @@ static int read_response(int fd, const char* cmd, int print_output) {
         }
 
         if (off >= size) {
-            buf = realloc(buf, size *= 2);
+            char* tmp = realloc(buf, size *= 2);
+            if (tmp == NULL) {
+                free(buf);
+            }
+            buf = tmp;
         }
     }
 
@@ -271,8 +275,9 @@ static int write_reply_info(int pid, int port, unsigned long long key) {
         return -1;
     }
 
-    int chars = snprintf(path, sizeof(path), "%016llx\n%d\n", key, port);
-    ssize_t r = write(fd, path, chars);
+    char content[64];
+    int chars = snprintf(content, sizeof(content), "%016llx\n%d\n", key, port);
+    ssize_t r = write(fd, content, chars);
     (void)r;
     close(fd);
 

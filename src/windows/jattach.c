@@ -97,7 +97,7 @@ static LPVOID allocate_data(HANDLE hProcess, char* pipeName, int argc, char** ar
 }
 
 static void print_error(const char* msg, DWORD code) {
-    printf("%s (error code = %d)\n", msg, code);
+    fprintf(stderr, "%s (error code = %d)\n", msg, code);
 }
 
 // If the process is owned by another user, request SeDebugPrivilege to open it.
@@ -131,7 +131,7 @@ static int check_bitness(HANDLE hProcess) {
 #ifdef _WIN64
     BOOL targetWow64 = FALSE;
     if (IsWow64Process(hProcess, &targetWow64) && targetWow64) {
-        printf("Cannot attach 64-bit process to 32-bit JVM\n");
+        fprintf(stderr, "Cannot attach 64-bit process to 32-bit JVM\n");
         return 0;
     }
 #else
@@ -139,7 +139,7 @@ static int check_bitness(HANDLE hProcess) {
     BOOL targetWow64 = FALSE;
     if (IsWow64Process(GetCurrentProcess(), &thisWow64) && IsWow64Process(hProcess, &targetWow64)) {
         if (thisWow64 != targetWow64)  {
-            printf("Cannot attach 32-bit process to 64-bit JVM\n");
+            fprintf(stderr, "Cannot attach 32-bit process to 64-bit JVM\n");
             return 0;
         }
     }
@@ -172,6 +172,7 @@ static int inject_thread(int pid, char* pipeName, int argc, char** argv) {
     LPVOID data = code != NULL ? allocate_data(hProcess, pipeName, argc, argv) : NULL;
     if (data == NULL) {
         print_error("Could not allocate memory in target process", GetLastError());
+        if (code != NULL) VirtualFreeEx(hProcess, code, 0, MEM_RELEASE);
         CloseHandle(hProcess);
         return 0;
     }
@@ -236,7 +237,7 @@ int jattach(int pid, int argc, char** argv, int print_output) {
                                                         &sec.lpSecurityDescriptor, NULL);
 
     char pipeName[MAX_PATH];
-    sprintf(pipeName, "\\\\.\\pipe\\javatool%d", GetTickCount());
+    snprintf(pipeName, sizeof(pipeName), "\\\\.\\pipe\\javatool%lu", GetTickCount());
     HANDLE hPipe = CreateNamedPipe(pipeName, PIPE_ACCESS_INBOUND, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
                                    1, 4096, 8192, NMPWAIT_USE_DEFAULT_WAIT, &sec);
     if (hPipe == INVALID_HANDLE_VALUE) {
